@@ -1,19 +1,46 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (div, text)
+import Html exposing (div, text, input, button)
+import Html.Events exposing (onClick)
+import String exposing (fromInt)
+import Debug exposing (log)
 
 
-add a b = a + b
+type Messages =
+    Add
+    | Other
+    | Chicken
 
 init = 
-    { value = 0}
+    { value = 54}
 
 view model =
-    div [] [text "Yo"]
+    div [] [
+        text (fromInt model.value)
+        , div [][]
+        , input [][]
+        , button [onClick Add][text "Add"]]
 
-update model =
-    model
+update msg model =
+    let
+        a = 1
+        b = 2
+        logmessage = log "yo"
+    in
+    
+
+
+
+    case msg of
+        Add -> 
+            model
+
+        Other -> 
+            model
+
+        Chicken -> 
+            model
 
 
 
