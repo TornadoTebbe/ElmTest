@@ -9,11 +9,9 @@ import Debug exposing (log)
 
 type Messages =
     Add
-    | Other
-    | Chicken
 
 init = 
-    { value = 54}
+    { value = 50, firstName = "Paul"}
 
 view model =
     div [] [
@@ -24,23 +22,13 @@ view model =
 
 update msg model =
     let
-        a = 1
-        b = 2
-        logmessage = log "yo"
+        log1 = log "message" msg
+        log2 = log "model" model
     in
-    
-
-
 
     case msg of
         Add -> 
-            model
-
-        Other -> 
-            model
-
-        Chicken -> 
-            model
+            {model | value = 70}
 
 
 
