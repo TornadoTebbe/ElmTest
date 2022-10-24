@@ -1,5 +1,7 @@
 module Main exposing (..)
 
+--importieren der Module
+
 import Browser
 import Csv
 import Csv.Decode
@@ -25,7 +27,7 @@ type alias Model =
 type Msg
     = GotText (Result Http.Error String)
 
-
+--hochladen der Daten aus dem Github
 init : () -> ( Model, Cmd Msg )
 init _ =
     let
@@ -35,7 +37,7 @@ init _ =
             List.map
                 (\x ->
                     Http.get
-                        { url = "http://localhost:8000/Daten/" ++ x ++ ".csv"
+                        { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
                         , expect = Http.expectString GotText
                         }
                 )
@@ -45,31 +47,6 @@ init _ =
     , Cmd.batch cmds
     )
 
-decodeStockDay : Csv.Decode.Decoder (( String, Maybe Float ) -> a) a
-decodeStockDay =
-    Csv.Decode.map
-        (\gender twelthMark ->
-            ( gender
-            , case String.toFloat twelthMark of
-                Just o ->
-                    Just o
-
-                Nothing ->
-                    Nothing
-            )
-        )
-        (Csv.Decode.andMap
-            (Csv.Decode.field "12th Mark" Ok)
-            (Csv.Decode.field "Gender" Ok)
-        )
-
-
-csvString_to_data : String -> List ( String, Maybe Float )
-csvString_to_data csvRaw =
-    Csv.parse csvRaw
-        |> Csv.Decode.decodeCsv decodeStockDay
-        |> Result.toMaybe
-        |> Maybe.withDefault []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
