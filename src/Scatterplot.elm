@@ -19,13 +19,184 @@ import Csv exposing (..)
 import TypedSvg.Attributes exposing (points)
 
 
-type alias XyData =
+{--type alias XyData =
     { xDescription : String
     , yDescription : String
+    }  
+    
+--}
+
+type Status
+    = Success
+    | Loading
+    | Failure
+
+
+type alias Model =
+    { status : Status
+    , data : String
     }
 
 
+type alias Student_Data =
+    {    gender : String
+    ,   department : String
+    ,   height : Int
+    ,   weight : Int
+    ,   tenthMark  : Float
+    ,   twelthMark  : Float
+    ,   collegeMark : Float
+    ,   hobbies : String
+    ,   dailyStudyingTime : String
+    ,   preferStudyTime : String
+    ,   salaryExpectation : Int
+    ,   satisfyDegree : String --Bool
+    ,   willignessDegree: String
+    ,   socialMedia : String
+    ,   travellingTime : String
+    ,   stressLevel : String
+    ,   financialStatus : String
+    ,   partTimeJob : String --Bool
+    }
 
+type Msg
+  = GotText (Result Http.Error String)
+
+
+
+
+--Einlesen der Daten
+
+daten: List String
+daten = ["Student_Behaviour.csv"]
+
+{--
+csvDatenLaden: (Result Http.Error String -> Msg) -> Cmd Msg
+csvDatenLaden msg =
+     daten 
+    |> List.map 
+      (\d ->
+      Http.get
+      { url = "https://raw.githubusercontent.com/nikschwa/Projekt-Information-Retrieval-und-Visualisierung/main/" ++ d
+      , expect = Http.expectString msg
+      }    
+    )
+    |> Cmd.batch
+  
+--}
+
+--Decodierung der Daten:
+
+csvString_to_data : String -> List Student_Data
+csvString_to_data csvRaw =
+    Csv.parse csvRaw
+        |> Csv.Decode.decodeCsv decodeCsvStudentdata
+        |> Result.toMaybe
+        |> Maybe.withDefault []
+
+
+decodeCsvStudentdata : Csv.Decode.Decoder (Student_Data -> a ) a 
+decodeCsvStudentdata =
+    Csv.Decode.map Student_Data
+        (Csv.Decode.field "Gender" Ok
+              |> Csv.Decode.andMap (Csv.Decode.field "Department" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Height(CM)"(String.toInt >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "Weight(KG)" (String.toInt >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "10th Mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "12th Mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "college mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "hobbies" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "daily studying time" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "prefer to study in" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "salary expectation" (String.toInt >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "Do you like your Degree?" Ok) --(String.toBool >> Result.fromMaybe "error parsing string")) 
+              |> Csv.Decode.andMap (Csv.Decode.field "willingness to pursue a career based on their degree" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "social medai & video" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Travelling Time" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Stress Level" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Financial Status" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "part time job" Ok) --(String.tool >> Result.fromMaybe "error parsing string")) 
+        )
+
+studentListe :List String -> List Student_Data
+studentListe student_liste =
+    List.map(\x -> csvString_to_data x) student_liste
+        |> List.concat
+
+
+
+--hochladen der Daten aus dem Github
+init : () -> ( Model, Cmd Msg )
+init _ =
+    let
+        data =
+            [ "Student_Behaviour"]
+        cmds =
+            List.map
+                (\x ->
+                    Http.get
+                        { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
+                        , expect = Http.expectString GotText
+                        }
+                )
+                data
+    in
+    ( { status = Loading, data = "" }
+    , Cmd.batch cmds
+    )
+
+
+
+
+
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotText result ->
+            case result of
+                Ok fullText ->
+                    ( { model | status = Success, data = model.data ++ fullText }, Cmd.none )
+
+                Err _ ->
+                    ( { model | status = Failure }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
+
+
+view : Model -> Html Msg
+view model =
+    case model.status of
+        Failure ->
+            text "I was unable to load your book."
+
+        Loading ->
+            text "Loading..."
+
+        Success ->
+            pre [] [ text model.data ]
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
+
+
+
+
+
+
+
+{--
 --Erstellung Scatterplot
 
 w : Float
@@ -97,10 +268,10 @@ defaultExtent =
 scatterplot : Svg msg
 scatterplot =
     let
-{--
+
         xyPoints =
             List.map2 (\x y -> ( x, y )) xValues yValues
-          --}
+          
           
         xScaleLocal : ContinuousScale Float
         xScaleLocal =
@@ -161,3 +332,6 @@ scatterplot =
                 (List.map2 (point xScaleLocal yScaleLocal) model.data xyPoints)
               
         ]
+
+
+--}
