@@ -19,30 +19,21 @@ import Csv exposing (..)
 import TypedSvg.Attributes exposing (points)
 
 
-{--type alias XyData =
-    { xDescription : String
-    , yDescription : String
-    }  
-    
---}
 
-type Status
-    = Success
+type Model
+    = Success String
     | Loading
     | Failure
 
 
-type alias Model =
-    { status : Status
-    , data : String
-    }
 
 
 type alias Student_Data =
-    {    gender : String
+    {   certification : String
+    ,   gender : String
     ,   department : String
-    ,   height : Int
-    ,   weight : Int
+    ,   height : Float
+    ,   weight : Float
     ,   tenthMark  : Float
     ,   twelthMark  : Float
     ,   collegeMark : Float
@@ -65,25 +56,10 @@ type Msg
 
 
 
+
+
 --Einlesen der Daten
 
-daten: List String
-daten = ["Student_Behaviour.csv"]
-
-{--
-csvDatenLaden: (Result Http.Error String -> Msg) -> Cmd Msg
-csvDatenLaden msg =
-     daten 
-    |> List.map 
-      (\d ->
-      Http.get
-      { url = "https://raw.githubusercontent.com/nikschwa/Projekt-Information-Retrieval-und-Visualisierung/main/" ++ d
-      , expect = Http.expectString msg
-      }    
-    )
-    |> Cmd.batch
-  
---}
 
 --Decodierung der Daten:
 
@@ -98,24 +74,25 @@ csvString_to_data csvRaw =
 decodeCsvStudentdata : Csv.Decode.Decoder (Student_Data -> a ) a 
 decodeCsvStudentdata =
     Csv.Decode.map Student_Data
-        (Csv.Decode.field "Gender" Ok
+        (Csv.Decode.field "Certification Course" Ok
+              |> Csv.Decode.andMap (Csv.Decode.field "Gender" Ok)
               |> Csv.Decode.andMap (Csv.Decode.field "Department" Ok)
-              |> Csv.Decode.andMap (Csv.Decode.field "Height(CM)"(String.toInt >> Result.fromMaybe "error parsing string"))
-              |> Csv.Decode.andMap (Csv.Decode.field "Weight(KG)" (String.toInt >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "Height(CM)"(String.toFloat >> Result.fromMaybe "error parsing string"))
+              |> Csv.Decode.andMap (Csv.Decode.field "Weight(KG)" (String.toFloat >> Result.fromMaybe "error parsing string"))
               |> Csv.Decode.andMap (Csv.Decode.field "10th Mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
               |> Csv.Decode.andMap (Csv.Decode.field "12th Mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
               |> Csv.Decode.andMap (Csv.Decode.field "college mark" (String.toFloat >> Result.fromMaybe "error parsing string"))
               |> Csv.Decode.andMap (Csv.Decode.field "hobbies" Ok)
-              |> Csv.Decode.andMap (Csv.Decode.field "daily studying time" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "daily studing time" Ok)
               |> Csv.Decode.andMap (Csv.Decode.field "prefer to study in" Ok)
               |> Csv.Decode.andMap (Csv.Decode.field "salary expectation" (String.toInt >> Result.fromMaybe "error parsing string"))
-              |> Csv.Decode.andMap (Csv.Decode.field "Do you like your Degree?" Ok) --(String.toBool >> Result.fromMaybe "error parsing string")) 
-              |> Csv.Decode.andMap (Csv.Decode.field "willingness to pursue a career based on their degree" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Do you like your degree?" Ok) --(String.toBool >> Result.fromMaybe "error parsing string")) 
+              |> Csv.Decode.andMap (Csv.Decode.field "willingness to pursue a career based on their degree  " Ok)
               |> Csv.Decode.andMap (Csv.Decode.field "social medai & video" Ok)
-              |> Csv.Decode.andMap (Csv.Decode.field "Travelling Time" Ok)
-              |> Csv.Decode.andMap (Csv.Decode.field "Stress Level" Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Travelling Time " Ok)
+              |> Csv.Decode.andMap (Csv.Decode.field "Stress Level " Ok)
               |> Csv.Decode.andMap (Csv.Decode.field "Financial Status" Ok)
-              |> Csv.Decode.andMap (Csv.Decode.field "part time job" Ok) --(String.tool >> Result.fromMaybe "error parsing string")) 
+              |> Csv.Decode.andMap (Csv.Decode.field "part-time job" Ok) --(String.tool >> Result.fromMaybe "error parsing string")) 
         )
 
 studentListe :List String -> List Student_Data
@@ -128,75 +105,26 @@ studentListe student_liste =
 --hochladen der Daten aus dem Github
 init : () -> ( Model, Cmd Msg )
 init _ =
-    let
-        data =
-            [ "Student_Behaviour"]
-        cmds =
-            List.map
-                (\x ->
-                    Http.get
-                        { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
-                        , expect = Http.expectString GotText
-                        }
-                )
-                data
-    in
-    ( { status = Loading, data = "" }
-    , Cmd.batch cmds
-    )
+    (Loading , 
+    Http.get
+    { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
+    , expect = Http.expectString GotText
+    })
 
 
 
+type alias Point =
+    { pointName : String, x : Float, y : Float }
+
+
+type alias XyData =
+    { xDescription : String
+    , yDescription : String
+    , data : List Point
+    }
 
 
 
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        GotText result ->
-            case result of
-                Ok fullText ->
-                    ( { model | status = Success, data = model.data ++ fullText }, Cmd.none )
-
-                Err _ ->
-                    ( { model | status = Failure }, Cmd.none )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
-
-
-view : Model -> Html Msg
-view model =
-    case model.status of
-        Failure ->
-            text "I was unable to load your book."
-
-        Loading ->
-            text "Loading..."
-
-        Success ->
-            pre [] [ text model.data ]
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , update = update
-        , subscriptions = subscriptions
-        , view = view
-        }
-
-
-
-
-
-
-
-{--
 --Erstellung Scatterplot
 
 w : Float
@@ -224,14 +152,33 @@ tickCount =
     5
 
 
-xAxis : List Float -> Svg msg
-xAxis values =
-    Axis.bottom [ Axis.tickCount tickCount ] (xScale values)
+defaultExtent : ( number, number1 )
+defaultExtent =
+    ( 0, 100 )
 
 
-yAxis : List Float -> Svg msg
-yAxis values =
-    Axis.left [ Axis.tickCount tickCount ] (yScale values)
+
+wideExtent : List Float -> ( Float, Float )
+wideExtent values =
+    let
+        exvals =
+            case Statistics.extent values of
+                Just vals ->
+                    vals
+
+                _ ->
+                    defaultExtent
+
+        len =
+            Tuple.second exvals - Tuple.first exvals
+
+        extension =
+            0.1 * len
+
+        limits =
+            ( max 0 (Tuple.first exvals - extension), Tuple.second exvals + extension )
+    in
+    limits
 
 
 xScale : List Float -> ContinuousScale Float
@@ -244,35 +191,28 @@ yScale values =
     Scale.linear ( h - 2 * padding, 0 ) (wideExtent values)
 
 
-wideExtent : List Float -> ( Float, Float )
-wideExtent values =
+xAxis : List Float -> Svg msg
+xAxis values =
+    Axis.bottom [ Axis.tickCount tickCount ] (xScale values)
+
+
+yAxis : List Float -> Svg msg
+yAxis values =
+    Axis.left [ Axis.tickCount tickCount ] (yScale values)
+
+
+scatterplot : XyData -> Html msg
+scatterplot model =
     let
-        closeExtent =
-            Statistics.extent values
-                |> Maybe.withDefault defaultExtent
+        {- hier können Sie die Beschriftung des Testpunkts berechnen -}
+        xValues : List Float
+        xValues =
+            List.map .x model.data
 
-        extension =
-            (Tuple.second closeExtent - Tuple.first closeExtent) / toFloat (2 * tickCount)
-    in
-    ( Tuple.first closeExtent - extension |> max 0
-    , Tuple.second closeExtent + extension
-    )
+        yValues : List Float
+        yValues =
+            List.map .y model.data
 
-
-defaultExtent : ( number, number1 )
-defaultExtent =
-    ( 0, 100 )
-
-
-
-scatterplot : Svg msg
-scatterplot =
-    let
-
-        xyPoints =
-            List.map2 (\x y -> ( x, y )) xValues yValues
-          
-          
         xScaleLocal : ContinuousScale Float
         xScaleLocal =
             xScale xValues
@@ -290,10 +230,7 @@ scatterplot =
             { x = wideExtent xValues |> half
             , y = wideExtent yValues |> Tuple.second
             }
-                         
-              
-    in            
-    
+    in
     svg [ viewBox 0 0 w h, TypedSvg.Attributes.width <| TypedSvg.Types.Percent 100, TypedSvg.Attributes.height <| TypedSvg.Types.Percent 100 ]
         [ style [] [ TypedSvg.Core.text """
             .point circle { stroke: rgba(0, 0, 0,0.4); fill: rgba(255, 255, 255,0.3); }
@@ -302,36 +239,83 @@ scatterplot =
             .point:hover text { display: inline; }
           """ ]
         , g
-            [ transform [ Translate (padding - 1) ( padding - 1 ) ]
-            , class [ "point" ]
-            , fontSize <| Px 10.0
-            , fontFamily [ "sans-serif" ]
+            [ transform
+                [ Translate (padding - 1) (padding - 1 + Tuple.first (Scale.range yScaleLocal))
+                ]
             ]
-            []
-            
-        , g 
-            [ transform [ Translate (padding - 1) (h - padding) ] ]
             [ xAxis xValues
-             , text_
-                [ x (Scale.convert xScaleLocal labelPositions.x)
-                 , y 30                
-                ]
-                [ text xLabel ]
-            ]
-        , g 
-            [transform [ Translate (padding - 1) padding ] ]
-            [ yAxis yValues                             
             , text_
-                [ x -40
-                , y ( Scale.convert yScaleLocal labelPositions.y - 15)  
+                [ x (Scale.convert xScaleLocal labelPositions.x)
+                , y 30
+                , textAnchor AnchorMiddle
+                , fontSize <| Px 10.0
+                , fontFamily [ "sans-serif" ]
                 ]
-                [ text yLabel ]         
+                [ text "cityMPG" ]
             ]
-         , g 
-             [transform [ Translate padding padding ] ]
-                (List.map2 (point xScaleLocal yScaleLocal) model.data xyPoints)
-              
+        , g [ transform [ Translate (padding - 1) (padding - 1) ] ]
+            [ yAxis yValues
+            , text_
+                [ y (Scale.convert yScaleLocal labelPositions.y - (1 / 3 * padding))
+                , x 0
+                , textAnchor AnchorMiddle
+                , fontSize <| Px 10.0
+                , fontFamily [ "sans-serif" ]
+                ]
+                [ text "Retail Price" ]
+            ]
         ]
 
 
---}
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotText result ->
+            case result of
+                Ok fullText ->
+                   {--( { model | status = Success, data = model.data ++ fullText }, Cmd.none )--} 
+                   (Success fullText, Cmd.none)
+
+                Err _ ->
+                  {--( { model | status = Failure }, Cmd.none )--}  
+                  (Failure, Cmd.none)
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
+
+
+view : Model -> Html Msg
+view model =
+    case model of
+        Failure ->
+            text "I was unable to load your book."
+
+        Loading ->
+            text "Loading..."
+
+        Success fullText->
+            Html.div []
+                [ Html.p []
+                    [
+                         text (String.fromInt (List.length (studentListe [fullText])))
+                    ]
+                , scatterplot 
+                ]
+
+            
+            
+            {--pre [] [ text (String.fromInt (List.length (studentListe [fullText]))) ] --}
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
+
