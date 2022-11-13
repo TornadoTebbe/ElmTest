@@ -116,7 +116,19 @@ init _ =
 --Scatterplot Definitionen
 
 type alias Point =
-    { pointName : String, x : Float, y : Float }
+    {   pointDescription : String
+    ,   salaryExpectation : Int
+    ,   tenthMark  : Float
+    ,   twelthMark  : Float
+    ,   collegeMark : Float
+    ,   dailyStudyingTime : String
+    ,   preferStudyTime : String
+    ,   satisfyDegree : String --Bool
+    ,   socialMedia : String
+    ,   stressLevel : String
+    ,   financialStatus : String
+    ,   partTimeJob : String --Bool
+    }
 
 
 type alias XyData =
@@ -203,16 +215,31 @@ yAxis values =
     Axis.left [ Axis.tickCount tickCount ] (yScale values)
 
 
-scatterplot : XyData -> Svg msg
-scatterplot model =
-    let
-        xValues : List Float
-        xValues =
-            List.map .x model.data
+drawPoint : ContinuousScale Float -> ContinuousScale Float -> Point ->(Float, Float) -> Svg msg
+drawPoint scalex scaley point scatterPoint =
+        g [ class [ "point" ], fontSize <| Px 10.0, fontFamily [ "sans-serif" ] ]       
+                [ circle
+                    [ cx (Scale.convert scalex (Tuple.first scatterPoint))
+                    , cy (Scale.convert scaley (Tuple.second scatterPoint))
+                    , r radius               
+                    ]
+                    [] 
+                    , text_
+                    [ x (Scale.convert scalex (Tuple.first scatterPoint))
+                    , y (Scale.convert scaley (Tuple.second scatterPoint) - (radius + 3))
+                    , textAnchor AnchorMiddle
+                    ]
+                    [Html.text point.pointDescription]
+                ]
 
-        yValues : List Float
-        yValues =
-            List.map .y model.data
+
+scatterplot : XyData -> List Float -> List Float -> String -> String -> Svg msg
+scatterplot model xValues yValues xDescription yDescription =
+    let
+
+        
+        scatterPoint =
+            List.map2 (\x y -> ( x, y )) xValues yValues
 
         xSkalierung : ContinuousScale Float
         xSkalierung =
@@ -266,6 +293,10 @@ scatterplot model =
                 ]
                 [ text model.yDescription ]
             ]
+
+        , g 
+             [transform [ Translate padding padding ] ]
+                (List.map2 (drawPoint xSkalierung ySkalierung) model.data scatterPoint)
         ]
 
 
@@ -292,7 +323,7 @@ map11 : (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l)
   -> Maybe l
 
 
-map11 function maybe1 maybe2 maybe3 maybe4 maybe5 maybe6 maybe7 maybe8 maybe9 maybe10 =
+map11 function maybe1 maybe2 maybe3 maybe4 maybe5 maybe6 maybe7 maybe8 maybe9 maybe10 maybe11 =
   Just function
     |> andMap maybe1
     |> andMap maybe2
@@ -304,6 +335,7 @@ map11 function maybe1 maybe2 maybe3 maybe4 maybe5 maybe6 maybe7 maybe8 maybe9 ma
     |> andMap maybe8
     |> andMap maybe9
     |> andMap maybe10
+    |> andMap maybe11
 
 
 
@@ -328,17 +360,17 @@ studenttoPoint student =
                 (partTimeJob)
         )
         
-        student.salaryExpectation
-        student.tenthMark
-        student.twelthMark
-        student.collegeMark
-        student.dailyStudyingTime
-        student.preferStudyTime
-        student.satisfyDegree
-        student.socialMedia
-        student.stressLevel
-        student.financialStatus
-        student.partTimeJob
+        (Just student.salaryExpectation)
+        (Just student.tenthMark)
+        (Just student.twelthMark)
+        (Just student.collegeMark)
+        (Just student.dailyStudyingTime)
+        (Just student.preferStudyTime)
+        (Just student.satisfyDegree)
+        (Just student.socialMedia)
+        (Just student.stressLevel)
+        (Just student.financialStatus)
+        (Just student.partTimeJob)
 
 
 
@@ -347,10 +379,10 @@ studenttoPoint student =
 
 
 filterAndReduceStudents : List Student_Data -> XyData
-filterAndReduceStudents my_students =
+filterAndReduceStudents students =
     let
         filter =
-            List.filterMap studenttoPoint my_students
+            List.filterMap studenttoPoint students
     in
     XyData "salary expectation" "college mark" filter
 
