@@ -18,7 +18,7 @@ import Csv.Decode exposing (..)
 import Csv exposing (..)
 import TypedSvg.Attributes exposing (points)
 
-
+--Definition für Daten einlesen
 
 type Model
     = Success String
@@ -113,6 +113,8 @@ init _ =
 
 
 
+--Scatterplot Definitionen
+
 type alias Point =
     { pointName : String, x : Float, y : Float }
 
@@ -201,10 +203,9 @@ yAxis values =
     Axis.left [ Axis.tickCount tickCount ] (yScale values)
 
 
-scatterplot : XyData -> Html msg
+scatterplot : XyData -> Svg msg
 scatterplot model =
     let
-        {- hier können Sie die Beschriftung des Testpunkts berechnen -}
         xValues : List Float
         xValues =
             List.map .x model.data
@@ -213,12 +214,12 @@ scatterplot model =
         yValues =
             List.map .y model.data
 
-        xScaleLocal : ContinuousScale Float
-        xScaleLocal =
+        xSkalierung : ContinuousScale Float
+        xSkalierung =
             xScale xValues
 
-        yScaleLocal : ContinuousScale Float
-        yScaleLocal =
+        ySkalierung : ContinuousScale Float
+        ySkalierung =
             yScale yValues
 
         half : ( Float, Float ) -> Float
@@ -240,31 +241,118 @@ scatterplot model =
           """ ]
         , g
             [ transform
-                [ Translate (padding - 1) (padding - 1 + Tuple.first (Scale.range yScaleLocal))
+                [ Translate (padding - 1) (padding - 1 + Tuple.first (Scale.range ySkalierung))
                 ]
             ]
             [ xAxis xValues
             , text_
-                [ x (Scale.convert xScaleLocal labelPositions.x)
+                [ x (Scale.convert xSkalierung labelPositions.x)
                 , y 30
                 , textAnchor AnchorMiddle
                 , fontSize <| Px 10.0
                 , fontFamily [ "sans-serif" ]
                 ]
-                [ text "cityMPG" ]
+                [ text model.xDescription ]
             ]
+
         , g [ transform [ Translate (padding - 1) (padding - 1) ] ]
             [ yAxis yValues
             , text_
-                [ y (Scale.convert yScaleLocal labelPositions.y - (1 / 3 * padding))
+                [ y (Scale.convert ySkalierung labelPositions.y - (1 / 3 * padding))
                 , x 0
                 , textAnchor AnchorMiddle
                 , fontSize <| Px 10.0
                 , fontFamily [ "sans-serif" ]
                 ]
-                [ text "Retail Price" ]
+                [ text model.yDescription ]
             ]
         ]
+
+
+
+
+--Bilden Map funktion für Filtern der Daten
+
+andMap : Maybe a -> Maybe (a -> b) -> Maybe b
+andMap =
+  Maybe.map2 (|>)
+  
+map11 : (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l) 
+  -> Maybe a
+  -> Maybe b
+  -> Maybe c
+  -> Maybe d
+  -> Maybe e
+  -> Maybe f
+  -> Maybe g
+  -> Maybe h
+  -> Maybe i
+  -> Maybe j
+  -> Maybe k
+  -> Maybe l
+
+
+map11 function maybe1 maybe2 maybe3 maybe4 maybe5 maybe6 maybe7 maybe8 maybe9 maybe10 =
+  Just function
+    |> andMap maybe1
+    |> andMap maybe2
+    |> andMap maybe3
+    |> andMap maybe4
+    |> andMap maybe5
+    |> andMap maybe6
+    |> andMap maybe7
+    |> andMap maybe8
+    |> andMap maybe9
+    |> andMap maybe10
+
+
+
+
+
+studenttoPoint : Student_Data -> Maybe Point
+studenttoPoint student =
+    map11
+        (\salaryExpectation tenthMark twelthMark collegeMark dailyStudyingTime preferStudyTime satisfyDegree socialMedia stressLevel financialStatus partTimeJob  ->
+            Point
+                (student.gender ++ " (" ++ String.fromFloat student.height ++ "," ++ String.fromFloat student.weight ++ ")")
+                (salaryExpectation)
+                (tenthMark)
+                (twelthMark)
+                (collegeMark)
+                (dailyStudyingTime)
+                (preferStudyTime)
+                (satisfyDegree)
+                (socialMedia)
+                (stressLevel)
+                (financialStatus)
+                (partTimeJob)
+        )
+        
+        student.salaryExpectation
+        student.tenthMark
+        student.twelthMark
+        student.collegeMark
+        student.dailyStudyingTime
+        student.preferStudyTime
+        student.satisfyDegree
+        student.socialMedia
+        student.stressLevel
+        student.financialStatus
+        student.partTimeJob
+
+
+
+
+
+
+
+filterAndReduceStudents : List Student_Data -> XyData
+filterAndReduceStudents my_students =
+    let
+        filter =
+            List.filterMap studenttoPoint my_students
+    in
+    XyData "salary expectation" "college mark" filter
 
 
 
