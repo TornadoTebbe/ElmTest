@@ -15,15 +15,16 @@ import TypedSvg.Types exposing (AnchorAlignment(..), Length(..), Paint(..), Tran
 import Browser
 import Http
 import Csv.Decode exposing (..)
-import Csv exposing (..)
+import Csv exposing (Csv)
 import TypedSvg.Attributes exposing (points)
 
 --Definition für Daten einlesen
 
 type Model
-    = Success String
-    | Loading
+    = Loading
+    | Data Student_Data
     | Failure
+    | Success2 String
 
 
 
@@ -95,7 +96,7 @@ decodeCsvStudentdata =
               |> Csv.Decode.andMap (Csv.Decode.field "part-time job" Ok) --(String.tool >> Result.fromMaybe "error parsing string")) 
         )
 
-studentListe :List String -> List Student_Data
+studentListe : List String -> List Student_Data
 studentListe student_liste =
     List.map(\x -> csvString_to_data x) student_liste
         |> List.concat
@@ -387,6 +388,63 @@ filterAndReduceStudents students =
     XyData "salary expectation" "college mark" filter
 
 
+stringToCsv : String -> Csv
+stringToCsv rawData =
+    Csv.parse rawData
+
+
+{--
+--Aufbereitung der Daten für den View
+dataForView : Student_Data -> Html Msg
+dataForView studenBehavData =
+    let
+        csv = 
+            stringToCsv sBData.dataAsStr
+        
+        filteredAndReduceStudents= filterAndReduceStudentssBData
+
+    in
+
+    --}
+
+
+
+--Displaying csv
+tableHeaderItem : String -> Html Msg
+tableHeaderItem content =
+    Html.th [] [ Html.text content ]
+
+tableRowItem : List String -> Html Msg
+tableRowItem content =
+    Html.tr [] (List.map cellItem content)
+
+cellItem : String -> Html Msg
+cellItem content =
+    td [] [ Html.text content ]
+
+
+
+viewDataToString : String -> Html Msg
+viewDataToString data =
+    let
+        csv = 
+            stringToCsv data
+    in
+    
+    div []
+        [ h1 [] [ Html.text "Student Behaviour" ]
+        --, div [] [ text data ]
+        , div []
+            [ Html.table []
+                [ Html.thead [] [ Html.tr [] (List.map tableHeaderItem csv.headers) ]
+                , Html.tbody [] (List.map tableRowItem csv.records)
+                ]
+            ]
+        ]
+
+
+
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -394,8 +452,8 @@ update msg model =
         GotText result ->
             case result of
                 Ok fullText ->
-                   {--( { model | status = Success, data = model.data ++ fullText }, Cmd.none )--} 
-                   (Success fullText, Cmd.none)
+                   {--( { model | status = Success2, data = model.data ++ fullText }, Cmd.none )--} 
+                   (Success2 fullText, Cmd.none)
 
                 Err _ ->
                   {--( { model | status = Failure }, Cmd.none )--}  
@@ -407,6 +465,7 @@ subscriptions _ =
     Sub.none
 
 
+
 view : Model -> Html Msg
 view model =
     case model of
@@ -416,7 +475,13 @@ view model =
         Loading ->
             text "Loading..."
 
-        Success fullText->
+        Data studenBehavData ->
+           dataForView studenBehavData
+
+
+
+
+        {--Success2 fullText->
             Html.div []
                 [ Html.p []
                     [
@@ -424,8 +489,8 @@ view model =
                     ]
                 , scatterplot 
                 ]
-
-            
+                --}
+        
             
             {--pre [] [ text (String.fromInt (List.length (studentListe [fullText]))) ] --}
 
