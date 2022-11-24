@@ -103,6 +103,16 @@ studentListe student_liste =
 
 
 
+--hochladen der Daten aus dem Github
+init : () -> ( Model, Cmd Msg )
+init _ =
+    (Loading , 
+    Http.get
+    { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
+    , expect = Http.expectString GotText
+    })
+
+
 
 --Scatterplot Definitionen
 
@@ -377,4 +387,120 @@ filterAndReduceStudents students =
     in
     XyData "salary expectation" "college mark" filter
 
+
+stringToCsv : String -> Csv
+stringToCsv rawData =
+    Csv.parse rawData
+
+
+{--
+--Aufbereitung der Daten für den View
+dataForView : Student_Data -> Html Msg
+dataForView studenBehavData =
+    let
+        csv = 
+            stringToCsv sBData.dataAsStr
+        
+        filteredAndReduceStudents= filterAndReduceStudentssBData
+
+    in
+
+    --}
+
+
+
+--Displaying csv
+tableHeaderItem : String -> Html Msg
+tableHeaderItem content =
+    Html.th [] [ Html.text content ]
+
+tableRowItem : List String -> Html Msg
+tableRowItem content =
+    Html.tr [] (List.map cellItem content)
+
+cellItem : String -> Html Msg
+cellItem content =
+    td [] [ Html.text content ]
+
+
+
+viewDataToString : String -> Html Msg
+viewDataToString data =
+    let
+        csv = 
+            stringToCsv data
+    in
+    
+    div []
+        [ h1 [] [ Html.text "Student Behaviour" ]
+        --, div [] [ text data ]
+        , div []
+            [ Html.table []
+                [ Html.thead [] [ Html.tr [] (List.map tableHeaderItem csv.headers) ]
+                , Html.tbody [] (List.map tableRowItem csv.records)
+                ]
+            ]
+        ]
+
+
+
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotText result ->
+            case result of
+                Ok fullText ->
+                   {--( { model | status = Success2, data = model.data ++ fullText }, Cmd.none )--} 
+                   (Success2 fullText, Cmd.none)
+
+                Err _ ->
+                  {--( { model | status = Failure }, Cmd.none )--}  
+                  (Failure, Cmd.none)
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
+
+
+
+view : Model -> Html Msg
+view model =
+    case model of
+        Failure ->
+            text "I was unable to load your book."
+
+        Loading ->
+            text "Loading..."
+
+        Data studenBehavData ->
+           dataForView studenBehavData
+
+
+
+
+        {--Success2 fullText->
+            Html.div []
+                [ Html.p []
+                    [
+                         text (String.fromInt (List.length (studentListe [fullText])))
+                    ]
+                , scatterplot 
+                ]
+                --}
+        
+            
+            {--pre [] [ text (String.fromInt (List.length (studentListe [fullText]))) ] --}
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
 
