@@ -20,7 +20,7 @@ type Status
 
 type alias Model =
     { status : Status
-    , data : String
+    , data : List Student_Data
     }
 
 
@@ -72,7 +72,7 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    case model.status of
+    case model of
         Failure ->
             text "I was unable to load your book."
 
@@ -80,7 +80,20 @@ view model =
             text "Loading..."
 
         Success ->
-            pre [] [ text model.data ]
+        
+            let 
+                filterScatter : List Student_Data -> AttributeType -> List Float
+                filterScatter scatterPunkteView attributeType =
+                    case attributeType of   
+                        TenthMark ->
+                            List.map .tenthMark scatterPunkteView 
+                        TwelthMark ->
+                            List.map .twelthMark scatterPunkteView 
+
+            in
+                scatterplot 
+
+
 
 
 main : Program () Model Msg
@@ -91,3 +104,7 @@ main =
         , subscriptions = subscriptions
         , view = view
         }
+
+
+
+

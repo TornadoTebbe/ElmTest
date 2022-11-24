@@ -15,15 +15,16 @@ import TypedSvg.Types exposing (AnchorAlignment(..), Length(..), Paint(..), Tran
 import Browser
 import Http
 import Csv.Decode exposing (..)
-import Csv exposing (..)
+import Csv exposing (Csv)
 import TypedSvg.Attributes exposing (points)
 
 --Definition für Daten einlesen
 
 type Model
-    = Success String
-    | Loading
+    = Loading
+    | Data Student_Data
     | Failure
+    | Success2 String
 
 
 
@@ -95,21 +96,11 @@ decodeCsvStudentdata =
               |> Csv.Decode.andMap (Csv.Decode.field "part-time job" Ok) --(String.tool >> Result.fromMaybe "error parsing string")) 
         )
 
-studentListe :List String -> List Student_Data
+studentListe : List String -> List Student_Data
 studentListe student_liste =
     List.map(\x -> csvString_to_data x) student_liste
         |> List.concat
 
-
-
---hochladen der Daten aus dem Github
-init : () -> ( Model, Cmd Msg )
-init _ =
-    (Loading , 
-    Http.get
-    { url = "https://raw.githubusercontent.com/TornadoTebbe/ElmTest/main/Daten/Student_Behaviour.csv"
-    , expect = Http.expectString GotText
-    })
 
 
 
@@ -386,56 +377,4 @@ filterAndReduceStudents students =
     in
     XyData "salary expectation" "college mark" filter
 
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        GotText result ->
-            case result of
-                Ok fullText ->
-                   {--( { model | status = Success, data = model.data ++ fullText }, Cmd.none )--} 
-                   (Success fullText, Cmd.none)
-
-                Err _ ->
-                  {--( { model | status = Failure }, Cmd.none )--}  
-                  (Failure, Cmd.none)
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
-
-
-view : Model -> Html Msg
-view model =
-    case model of
-        Failure ->
-            text "I was unable to load your book."
-
-        Loading ->
-            text "Loading..."
-
-        Success fullText->
-            Html.div []
-                [ Html.p []
-                    [
-                         text (String.fromInt (List.length (studentListe [fullText])))
-                    ]
-                , scatterplot 
-                ]
-
-            
-            
-            {--pre [] [ text (String.fromInt (List.length (studentListe [fullText]))) ] --}
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , update = update
-        , subscriptions = subscriptions
-        , view = view
-        }
 
